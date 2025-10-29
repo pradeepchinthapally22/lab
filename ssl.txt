@@ -1,11 +1,35 @@
-openssl genpkey -algorithm RSA -out private.key -pkeyopt rsa_keygen_bits:2048
+### 1. `openssl genpkey -algorithm RSA -out private.key -pkeyopt rsa_keygen_bits:2048`
 
-openssl req -new -key private.key -out request.csr
+* **What it does:** "Generate Private Key"
+* **Explanation:** This is Step 1. It creates a new 2048-bit RSA private key (the secret part, $x$ or $d$ from our examples) and saves it to a file named `private.key`. This file must be kept secret.
 
-openssl req -x509 -key private.key -in request.csr -out certificate.crt -days 365
+### 2. `openssl req -new -key private.key -out request.csr`
 
-openssl pkcs12 -export -out bundle.p12 -inkey private.key -in certificate.crt
+* **What it does:** "Create Certificate Signing Request (CSR)"
+* **Explanation:** This takes your `private.key` and prompts you for identity information (like Country, Organization Name, Common Name/Domain). It bundles this info with your *public key* (derived from `private.key`) into a file called `request.csr`. You give this CSR to a public Certificate Authority (CA) like Let's Encrypt to get a trusted certificate.
 
-openssl x509 -in certificate.crt -text -noout
+### 3. `openssl req -x509 -key private.key -in request.csr -out certificate.crt -days 365`
 
-openssl s_client -connect example.com:443
+* **What it does:** "Create a Self-Signed Certificate"
+* **Explanation:** This command skips the public CA and "self-signs" your own CSR. You use your own `private.key` to sign the `request.csr` and create a final `certificate.crt` that is valid for 365 days.
+* **Note:** This is perfect for development and testing, but web browsers will show a "Not Secure" warning because the certificate isn't signed by a trusted CA.
+
+### 4. `openssl pkcs12 -export -out bundle.p12 -inkey private.key -in certificate.crt`
+
+* **What it does:** "Bundle Key and Certificate"
+* **Explanation:** This creates a password-protected file (`bundle.p12`) that contains *both* your `private.key` and your `certificate.crt`. This is a common format for importing your credentials into servers (like Windows IIS or Tomcat).
+
+### 5. `openssl x509 -in certificate.crt -text -noout`
+
+* **What it does:** "Inspect a Certificate"
+* **Explanation:** This is a diagnostic tool. It reads the `certificate.crt` file and prints all its details in a human-readable format: who it was issued to (Subject), who issued it (Issuer), the expiration date, the public key, and the signature.
+
+### 6. `openssl req -in request.csr -text -noout`
+
+* **What it does:** "Inspect a CSR"
+* **Explanation:** Similar to the one above, this reads and prints the contents of your `request.csr` file, allowing you to double-check the identity information *before* you send it to a CA or self-sign it.
+
+### 7. `openssl s_client -connect example.com:443`
+
+* **What it does:** "Test a Live SSL Server"
+* **Explanation:** This is one of the most useful `openssl` commands. It connects to any HTTPS-enabled server (in this case, `example.com` on port `443`) and prints out the entire SSL certificate chain that the server sends to its visitors. It's the best way to see a server's real, live certificate and verify it's working.
